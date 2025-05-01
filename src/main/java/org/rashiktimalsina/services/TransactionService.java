@@ -12,7 +12,7 @@ public interface TransactionService {
 
     void issueBook(Transaction transaction);
 
-    void returnBook(String transactionId);
+    boolean returnBook(String transactionId);
 
     List<Transaction> getAllTransactions();
 

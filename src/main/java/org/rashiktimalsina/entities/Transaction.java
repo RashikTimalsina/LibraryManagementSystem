@@ -14,7 +14,7 @@ public class Transaction {
     private LocalDate issueDate;
     private LocalDate returnDate;
 
-    public Transaction(String id, Book book,User user, LocalDate issueDate) {
+    public Transaction(String id, Book book, User user, LocalDate issueDate) {
         this.id = id;
         this.book = book;
         this.user = user;

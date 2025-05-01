@@ -9,7 +9,6 @@ import java.util.List;
  * @author RashikTimalsina
  * @created 29/04/2025
  */
-
 public class TransactionServiceImpl implements TransactionService {
 
     private final List<Transaction> transactions = new ArrayList<>();
@@ -27,12 +26,13 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public void returnBook(String transactionId) {
+    public boolean returnBook(String transactionId) {
         Transaction transaction = findTransactionById(transactionId);
         if (transaction != null && transaction.getReturnDate() == null) {
             transaction.setReturnDate(LocalDate.now());
             bookService.updateBookAvailability(transaction.getBook().getId(), true);
         }
+        return false;
     }
 
     @Override
