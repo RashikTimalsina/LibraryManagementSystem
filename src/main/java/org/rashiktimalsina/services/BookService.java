@@ -22,6 +22,6 @@ public interface BookService {
 
     List<Book> getAvailableBooks();
 
-    void updateBookAvailability(String bookId, boolean available);
+//    void updateBookAvailability(String bookId, boolean available);
 
 }

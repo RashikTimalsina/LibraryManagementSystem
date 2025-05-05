@@ -12,17 +12,22 @@ import java.util.List;
 public class TransactionServiceImpl implements TransactionService {
 
     private final List<Transaction> transactions = new ArrayList<>();
-
+    private final BookQuantityService bookQuantityService;
     private final BookService bookService;
 
-    public TransactionServiceImpl(BookService bookService) {
+    public TransactionServiceImpl(BookQuantityService bookQuantityService, BookService bookService) {
+        this.bookQuantityService = bookQuantityService;
         this.bookService = bookService;
     }
 
     @Override
     public void issueBook(Transaction transaction) {
-        transactions.add(transaction);
-        bookService.updateBookAvailability(transaction.getBook().getId(), false);
+        if (bookQuantityService.getQuantity(transaction.getBook()) > 0) {
+            transactions.add(transaction);
+            bookQuantityService.decreaseQuantity(transaction.getBook());
+        } else {
+            throw new IllegalStateException("Book not available");
+        }
     }
 
     @Override
@@ -30,7 +35,7 @@ public class TransactionServiceImpl implements TransactionService {
         Transaction transaction = findTransactionById(transactionId);
         if (transaction != null && transaction.getReturnDate() == null) {
             transaction.setReturnDate(LocalDate.now());
-            bookService.updateBookAvailability(transaction.getBook().getId(), true);
+            bookQuantityService.increaseQuantity(transaction.getBook());
         }
         return false;
     }
@@ -66,10 +71,7 @@ public class TransactionServiceImpl implements TransactionService {
         for (int i = 0; i < transactions.size(); i++) {
             if (transactions.get(i).getId().equals(transactionId)) {
                 if (transactions.get(i).getReturnDate() == null) {
-                    bookService.updateBookAvailability(
-                            transactions.get(i).getBook().getId(),
-                            true
-                    );
+                    bookQuantityService.increaseQuantity(transactions.get(i).getBook());
                 }
                 transactions.remove(i);
                 return true;

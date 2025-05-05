@@ -12,10 +12,16 @@ import java.util.List;
 public class BookServiceImpl implements BookService {
 
     private final List<Book> books = new ArrayList<>();
+    private final BookQuantityService bookQuantityService;
+
+    public BookServiceImpl(BookQuantityService bookQuantityService) {
+        this.bookQuantityService = bookQuantityService;
+    }
 
     @Override
     public void addBook(Book book) {
         books.add(book);
+        bookQuantityService.addBook(book, 1);
     }
 
     @Override
@@ -65,23 +71,23 @@ public class BookServiceImpl implements BookService {
         List<Book> result = new ArrayList<>();
         // traverse through all the books in the list to see the available books
         for (Book book : books) {
-            if (book.isAvailable()) {
+            if (bookQuantityService.getQuantity(book) > 0) {
                 result.add(book);   //add and display the available books in the result
             }
         }
         return result;
     }
 
-    @Override
-    public void updateBookAvailability(String bookId, boolean available) {
-        Book book = findBookById(bookId);
-        // first , if book exists in the list, mark it as available.
-        if (book != null) {
-            book.setAvailable(available);
-        }
-        //otherwise, give a not found message
-        else{
-            System.out.println("Book not found with id: " + bookId);
-        }
-    }
+//    @Override
+//    public void updateBookAvailability(String bookId, boolean available) {
+//        Book book = findBookById(bookId);
+//        // first , if book exists in the list, mark it as available.
+//        if (book != null) {
+//            book.setAvailable(available);
+//        }
+//        //otherwise, give a not found message
+//        else{
+//            System.out.println("Book not found with id: " + bookId);
+//        }
+//    }
 }
