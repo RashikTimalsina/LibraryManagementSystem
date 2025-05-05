@@ -15,16 +15,16 @@ public class IdGenerator {
 
     //to generate id for book
     public static String generateBookId() {
-        return "B" + bookCounter++;
+        return "" + bookCounter++;
     }
 
     //to generate id for user
     public static String generateUserId() {
-        return "U" + userCounter++;
+        return "" + userCounter++;
     }
 
     // to generate id for a transaction
     public static String generateTransactionId() {
-        return "T" + transactionCounter++;
+        return "" + transactionCounter++;
     }
 }
