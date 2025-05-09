@@ -1,5 +1,6 @@
 package main.java.org.rashiktimalsina.entities;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 
 /**
@@ -7,7 +8,7 @@ import java.time.LocalDate;
  * @created 28/04/2025
  */
 
-public class Transaction {
+public class Transaction implements Serializable {
     private String id;
     private Book book;
     private User user;

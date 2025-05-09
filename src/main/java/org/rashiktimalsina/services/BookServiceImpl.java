@@ -13,6 +13,7 @@ public class BookServiceImpl implements BookService {
 
     private final List<Book> books = new ArrayList<>();
     private final BookQuantityService bookQuantityService;
+    private final String FILE_NAME = "books.txt";
 
     public BookServiceImpl(BookQuantityService bookQuantityService) {
         this.bookQuantityService = bookQuantityService;
