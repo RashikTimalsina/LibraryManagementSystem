@@ -1,11 +1,14 @@
 package main.java.org.rashiktimalsina;
 
 import main.java.org.rashiktimalsina.entities.Book;
+import main.java.org.rashiktimalsina.entities.LogEntry;
 import main.java.org.rashiktimalsina.entities.User;
 import main.java.org.rashiktimalsina.entities.Transaction;
 import main.java.org.rashiktimalsina.services.*;
 import main.java.org.rashiktimalsina.utils.IdGenerator;
 
+import java.io.File;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Scanner;
@@ -20,43 +23,97 @@ public class MyMainApp {
     private static BookQuantityService bookQuantityService = new BookQuantityServiceImpl();
     private static BookService bookService = new BookServiceImpl(bookQuantityService);
     private static UserService userService = new UserServiceImpl();
-    private static TransactionService transactionService = new TransactionServiceImpl(bookQuantityService,bookService);
+    private static TransactionService transactionService = new TransactionServiceImpl(bookQuantityService, bookService);
+    private static LoggerService logger = LoggerService.getInstance();
 
-    //create a scanner object to take input from the user(library manager)
-    private static Scanner scanner = new Scanner(System.in);
 
-    public static void main(String[] args) {
-        while (true) {
-            System.out.println("\n-----------------------------------------------");
-            System.out.println("--- Welcome to Library Management System ---");
-            System.out.println("-----------------------------------------------");
-            System.out.println("1. Book Operations");
-            System.out.println("2. User Operations");
-            System.out.println("3. Transaction Operations");
-            System.out.println("4. Exit");
-            System.out.print("Enter your choice: ");
+    private static final String DATA_DIR = "data";
+    private static final String USERS_FILE = DATA_DIR + "/users.dat";
+    private static final String BOOKS_FILE = DATA_DIR + "/books.dat";
+    private static final String TRANSACTIONS_FILE = DATA_DIR + "/transactions.dat";
+    private static final String LOGS_FILE = DATA_DIR + "/logs.dat";
 
-            int mainChoice = scanner.nextInt();
-            scanner.nextLine(); // consume newline
 
-            switch (mainChoice) {
-                case 1:
-                    bookOperations();
-                    break;
-                case 2:
-                    userOperations();
-                    break;
-                case 3:
-                    transactionOperations();
-                    break;
-                case 4:
-                    System.out.println("Exiting system.");
-                    System.exit(0);
-                default:
-                    System.out.println("Invalid choice. Try again.");
-            }
+    private static void initializeDataFiles() throws IOException {
+        // Create data directory if it doesn't exist
+        File dataDir = new File(DATA_DIR);
+        if (!dataDir.exists()) {
+            dataDir.mkdir();
+        }
+
+        // Initialize each file
+        createFileIfNotExists(USERS_FILE);
+        createFileIfNotExists(BOOKS_FILE);
+        createFileIfNotExists(TRANSACTIONS_FILE);
+        createFileIfNotExists(LOGS_FILE);
+
+    }
+
+    private static void createFileIfNotExists(String filePath) throws IOException {
+        File file = new File(filePath);
+        if (!file.exists()) {
+            file.createNewFile();
+            System.out.println("Initialized data file: " + filePath);
         }
     }
+
+    //create scanner object to take input
+    private static Scanner sc = new Scanner(System.in);
+
+
+    //--------------------------------------------------------------------
+
+    //MAIN METHOD
+    public static void main(String[] args) {
+        try {
+            // Initialize data files first
+            initializeDataFiles();
+
+            // Then initialize logger
+            logger = LoggerService.getInstance();
+
+            System.out.println("Data files and logger initialized successfully!");
+
+            while (true) {
+                System.out.println("\n-----------------------------------------------");
+                System.out.println("--- Welcome to Library Management System ---");
+                System.out.println("-----------------------------------------------");
+                System.out.println("1. Book Operations");
+                System.out.println("2. User Operations");
+                System.out.println("3. Transaction Operations");
+                System.out.println("4. View logs");
+                System.out.println("5. Exit");
+                System.out.print("Enter your choice: ");
+
+                int mainChoice = sc.nextInt();
+                sc.nextLine(); // consume newline
+
+                switch (mainChoice) {
+                    case 1:
+                        bookOperations();
+                        break;
+                    case 2:
+                        userOperations();
+                        break;
+                    case 3:
+                        transactionOperations();
+                        break;
+                    case 4:
+                        viewLogs();
+                        break;
+                    case 5:
+                        System.out.println("Exiting system.");
+                        System.exit(0);
+                    default:
+                        System.out.println("Invalid choice. Try again.");
+                 }
+               }
+             } catch(IOException e) {
+                    System.err.println("CRITICAL ERROR: Failed to initialize data files: " + e.getMessage());
+                    System.exit(1);
+             }
+}
+
 
     // BOOK OPERATIONS
     private static void bookOperations() {
@@ -70,8 +127,8 @@ public class MyMainApp {
             System.out.println("6. Back to Main Menu");
             System.out.print("Enter choice: ");
 
-            int choice = scanner.nextInt();
-            scanner.nextLine();
+            int choice = sc.nextInt();
+            sc.nextLine();
 
             switch (choice) {
                 case 1:
@@ -98,13 +155,14 @@ public class MyMainApp {
     }
 
     private static void addNewBook() {
+        try{
         System.out.print("Enter book title: ");
-        String title = scanner.nextLine();
+        String title = sc.nextLine();
         System.out.print("Enter author: ");
-        String author = scanner.nextLine();
+        String author = sc.nextLine();
         System.out.print("Enter initial quantity: ");
-        int quantity = scanner.nextInt();
-        scanner.nextLine();
+        int quantity = sc.nextInt();
+        sc.nextLine();
 
 
         // creating a book object which consists of autogenerated-id , title and author as an args
@@ -112,7 +170,19 @@ public class MyMainApp {
         //adding the user object using add method defined inside userService class
         bookService.addBook(book);
         bookQuantityService.addBook(book, quantity);
+
+            logger.logBookOperation("ADD_BOOK",
+                    "Added book: " + book + " with quantity: " + quantity,
+                    "SUCCESS");
         System.out.println("Book added: " + book + " Quantity: " + quantity);
+    }
+        catch (Exception e) {
+            logger.logBookOperation("ADD_BOOK",
+                    "Failed to add book: " + e.getMessage(),
+                    "ERROR");
+            System.out.println("Error adding book: " + e.getMessage());
+
+        }
     }
 
     private static void viewAllBooks() {
@@ -135,7 +205,7 @@ public class MyMainApp {
 
     private static void searchBookByTitle() {
         System.out.print("Enter title to search: ");
-        String title = scanner.nextLine();
+        String title = sc.nextLine();
         //call the findBooksByTitle method of bookService to search book by its title from the list
         List<Book> books = bookService.findBooksByTitle(title);
         //check if the list is empty
@@ -152,7 +222,7 @@ public class MyMainApp {
 
     private static void searchBookByAuthor() {
         System.out.print("Enter author to search: ");
-        String author = scanner.nextLine();
+        String author = sc.nextLine();
         //call the findBooksByAuthor method of bookService to search book by its author from the list
         List<Book> books = bookService.findBooksByAuthor(author);
         // check if the list is empty
@@ -182,6 +252,8 @@ public class MyMainApp {
         }
     }
 
+
+
     // USER OPERATIONS
     private static void userOperations() {
         while (true) {
@@ -193,8 +265,8 @@ public class MyMainApp {
             System.out.println("5. Back to Main Menu");
             System.out.print("Enter choice: ");
 
-            int choice = scanner.nextInt();
-            scanner.nextLine();
+            int choice = sc.nextInt();
+            sc.nextLine();
 
             switch (choice) {
                 case 1:
@@ -218,16 +290,27 @@ public class MyMainApp {
     }
 
     private static void addNewUser() {
+        try{
         System.out.print("Enter user name: ");
-        String name = scanner.nextLine();
+        String name = sc.nextLine();
         System.out.print("Enter email: ");
-        String email = scanner.nextLine();
+        String email = sc.nextLine();
 
         // creating a user object which consists of autogenerated-id ,name and email as an args
         User user = new User(IdGenerator.generateUserId(), name, email);
         //adding the user object using add method defined inside userService class
         userService.addUser(user);
+
+        logger.logUserOperation("ADD_USER",
+                "Added user: " + user,
+                "SUCCESS");
         System.out.println("User added: " + user);
+    }catch (Exception e) {
+            logger.logUserOperation("ADD_USER",
+                    "Failed to add user: " + e.getMessage(),
+                    "ERROR");
+            System.out.println("Error adding user: " + e.getMessage());
+        }
     }
 
     private static void viewAllUsers() {
@@ -245,12 +328,12 @@ public class MyMainApp {
     }
 
     private static void updateUser() {
-
+try{
         //First show all users
         viewAllUsers();
 
         System.out.print("\nEnter User ID to update: ");
-        String userId = scanner.nextLine();
+        String userId = sc.nextLine();
 
         // Check if prompted user exists first by calling findUserById method of us
         User existingUser = userService.findUserById(userId);
@@ -265,11 +348,11 @@ public class MyMainApp {
 
         // update the username
         System.out.print("\nEnter new name: ");
-        String newName = scanner.nextLine();
+        String newName = sc.nextLine();
 
         //update the email
         System.out.print("Enter new email: ");
-        String newEmail = scanner.nextLine();
+        String newEmail = sc.nextLine();
 
         // Only update fields that have new values set
         String finalName = newName.isBlank() ? existingUser.getName() : newName;
@@ -282,44 +365,74 @@ public class MyMainApp {
             System.out.println("Updated Details:");
             //calling findUserById method of us to show updated details
             System.out.println(userService.findUserById(userId));
+            logger.logUserOperation("UPDATE_USER",
+                    "Update user: " +userId,
+                    "SUCCESS");
         } else {
             System.out.println("Error: Failed to update user.");
         }
     }
+catch (Exception e) {
+    logger.logUserOperation("ADD_USER",
+            "Failed to add user: " + e.getMessage(),
+            "ERROR");
+   System.out.println("Error updating user: " + e.getMessage());
+                }
+
+    }
 
     private static void deleteUser() {
-        // First show all users
-        viewAllUsers();
+       try {
+           // First show all users
+           viewAllUsers();
 
-        System.out.print("\nUser ID to delete: ");
-        String userId = scanner.nextLine();
+           System.out.print("\nUser ID to delete: ");
+           String userId = sc.nextLine();
 
-        // FIRST check if user exists
-        User userToDelete = userService.findUserById(userId);
-        if (userToDelete == null) {
-            System.out.println("Error: User with ID " + userId + " does not exist!");
-            return;
-        }
+           // Validate input
+           if (userId.isEmpty()) {
+               System.out.println("Error: User ID cannot be empty!");
+               return;
+           }
 
-        // show the user details before asking for confirmation
-        System.out.println("\nUser to be deleted:");
-        System.out.println(userToDelete);
+           // now check if user exists
+           User userToDelete = userService.findUserById(userId);
+           if (userToDelete == null) {
+               System.out.println("Error: User with ID " + userId + " does not exist!");
+               return;
+           }
 
-        //ask for confirmation
-        System.out.print("\nAre you sure you want to delete this user? (yes/no): ");
-        String confirmation = scanner.nextLine().toLowerCase();
+           // show the user details before asking for confirmation
+           System.out.println("\nUser to be deleted:");
+           System.out.println(userToDelete);
 
-        if (confirmation.equals("yes")) {
-            boolean isDeleted = userService.deleteUser(userId);
-            if (isDeleted) {
-                System.out.println("User deleted successfully!");
-            } else {
-                System.out.println("Error: Failed to delete user.");
-            }
-        } else {
-            System.out.println("Deletion cancelled.");
+           //ask for confirmation
+           System.out.print("\nAre you sure you want to delete this user? (yes/no): ");
+           String confirmation = sc.nextLine().toLowerCase();
+
+           if (confirmation.equalsIgnoreCase("yes")) {
+               boolean isDeleted = userService.deleteUser(userId);
+               if (isDeleted) {
+                   System.out.println("User deleted successfully!");
+                   logger.logUserOperation("DELETE_USER",
+                           "Deleted user: " + userId,
+                           "SUCCESS");
+               } else {
+                   System.out.println("Error: Failed to delete user.");
+               }
+           } else {
+               System.out.println("Deletion cancelled.");
+           }
+       }catch(Exception e){
+            System.out.println("Error during user deletion: " + e.getMessage());
+           logger.logUserOperation("DELETE_USER",
+                   "Failed to delete user: " + e.getMessage(),
+                   "ERROR");
         }
     }
+
+
+
 
     // TRANSACTION OPERATIONS
     private static void transactionOperations() {
@@ -332,8 +445,8 @@ public class MyMainApp {
             System.out.println("5. Back to Main Menu");
             System.out.print("Enter choice: ");
 
-            int choice = scanner.nextInt();
-            scanner.nextLine();
+            int choice = sc.nextInt();
+            sc.nextLine();
 
             switch (choice) {
                 case 1:
@@ -362,6 +475,9 @@ public class MyMainApp {
         List<Book> availableBooks = bookService.getAvailableBooks();
         //check if list is empty
         if (availableBooks.isEmpty()) {
+            logger.logTransactionOperation("ISSUE_BOOK",
+                    "No books available to issue",
+                    "ERROR");
             System.out.println("No books available.");
             return;
         }
@@ -375,6 +491,9 @@ public class MyMainApp {
         List<User> users = userService.getAllUsers();
         //check if list is empty
         if (users.isEmpty()) {
+            logger.logTransactionOperation("ISSUE_BOOK",
+                    "No users registered",
+                    "ERROR");
             System.out.println("No users registered.");
             return;
         }
@@ -387,9 +506,9 @@ public class MyMainApp {
 
         //third get input of book id and user id to record the transaction
         System.out.print("\nEnter Book ID: ");
-        String bookId = scanner.nextLine();
+        String bookId = sc.nextLine();
         System.out.print("Enter User ID: ");
-        String userId = scanner.nextLine();
+        String userId = sc.nextLine();
 
         //Call findBook & findUserById() of bs and us to check if they exists
         Book book = bookService.findBookById(bookId);
@@ -397,16 +516,12 @@ public class MyMainApp {
 
         //if shown empty throw a error message
         if (book == null || user == null) {
+            logger.logTransactionOperation("ISSUE_BOOK",
+                    "Invalid book or user ID. BookID: " + bookId + ", UserID: " + userId,
+                    "ERROR");
             System.out.println("Invalid book or user ID.");
             return;
         }
-
-//        // if book is not available
-//        if (!book.isAvailable()) {
-//            System.out.println("Book not available.");
-//            return;
-//        }
-
 
         // creating a transaction object which consists of autogenerated-id , book object , user object and current localdate as an args
         Transaction transaction = new Transaction(
@@ -419,14 +534,23 @@ public class MyMainApp {
         //invoke issueBook() of ts to issue a book after all these process
         try {
             transactionService.issueBook(transaction);
+            logger.logTransactionOperation("ISSUE_BOOK",
+                    "Issued book. Transaction: " + transaction.getId() +
+                            ", Book: " + book.getTitle() +
+                            ", User: " + user.getName(),
+                    "SUCCESS");
             System.out.println("Book issued to Transaction ID: " + transaction.getId());
         } catch (IllegalStateException e) {
+            logger.logTransactionOperation("ISSUE_BOOK",
+                    "Failed to issue book: " + e.getMessage(),
+                    "ERROR");
             System.out.println("Error: " + e.getMessage());
         }
     }
 
 
     private static void returnBook() {
+       try{
         //  Get active transactions
         List<Transaction> activeTransactions = transactionService.getActiveTransactions();
 
@@ -446,7 +570,7 @@ public class MyMainApp {
 
         //  Get transaction ID from user
         System.out.print("\nEnter Transaction ID to return: ");
-        String transactionId = scanner.nextLine();
+        String transactionId = sc.nextLine();
 
         //  Process return and show result
         if (transactionService.returnBook(transactionId)) {
@@ -456,12 +580,22 @@ public class MyMainApp {
             if (transaction == null) {
                 System.out.println("Error: Transaction ID not found");
             } else if (transaction.getReturnDate() != null) {
+                logger.logTransactionOperation("RETURN_BOOK",
+                        "Returned transaction : " +transactionId ,
+                        "SUCCESS");
                 System.out.println("The book got returned successfully on " + transaction.getReturnDate());
             } else {
                 System.out.println("Error: Unable to  return");
             }
         }
 
+    }
+       catch(Exception e){
+           logger.logTransactionOperation("RETURN_BOOK",
+                   "Failed to carry return transactions: " + e.getMessage(),
+                   "ERROR");
+           System.out.println("Error: " + e.getMessage());
+       }
     }
 
     private static void viewAllTransactions() {
@@ -481,22 +615,91 @@ public class MyMainApp {
     }
 
     private static void deleteTransaction() {
-        //To delete first show all transactions
-        viewAllTransactions();
+        try {
+            //To delete first show all transactions
+            viewAllTransactions();
 
             System.out.print("\nEnter Transaction ID to delete: ");
-            String transactionId = scanner.nextLine();
+            String transactionId = sc.nextLine();
+
+            //then check if transaction exists
+            Transaction transaction = transactionService.findTransactionById(transactionId);
+
+            if (transaction == null) {
+                System.out.println("Transaction not found. Try again.");
+                return;
+            }
+
+            // Check if it's an active transaction
+            List<Transaction> activeTransactions = transactionService.getActiveTransactions();
+            boolean isActive = false;
+
+            for (Transaction active : activeTransactions) {
+                if (active.getId().equals(transactionId)) {
+                    isActive = true;
+                    break;
+                }
+            }
+            if (isActive) {
+                System.out.println("Cannot delete: The book is still not returned.");
+                return;
+            }
 
             //invoke the deleteTransaction() of ts
             boolean deleted = transactionService.deleteTransaction(transactionId);
             //if deleted give success message
             if (deleted) {
+                logger.logTransactionOperation("DELETE_TRANSACTION", "Deleted transaction : " +transactionId , "SUCCESS");
                 System.out.println("Transaction deleted successfully.");
             } else {
                 System.out.println("Transaction not found.Try again");
             }
         }
+        catch(Exception e){
+            logger.logTransactionOperation("DELETED_TRANSACTION",
+                    "Failed to delete transaction: " + e.getMessage(),
+                    "ERROR");
+            System.out.println("Error: " + e.getMessage());
+        }
+    }
 
+
+
+    //VIEW LOGS
+    private static void viewLogs() {
+        while (true) {
+            System.out.println("\n--- Log Viewing ---");
+            System.out.println("1. View Book Logs");
+            System.out.println("2. View User Logs");
+            System.out.println("3. View Transaction Logs");
+            System.out.println("4. View All Logs");
+            System.out.println("5. Back to Main Menu");
+            System.out.print("Enter choice: ");
+
+            int choice = sc.nextInt();
+            sc.nextLine();
+
+            switch (choice) {
+                case 1:
+                    logger.viewLogs(LogEntry.LogType.BOOK);
+                    break;
+                case 2:
+                    logger.viewLogs(LogEntry.LogType.USER);
+                    break;
+                case 3:
+                    logger.viewLogs(LogEntry.LogType.TRANSACTION);
+                    break;
+                case 4:
+                    logger.viewLogs(null); // to show all logs
+                    break;
+                case 5:
+                    return;
+                default:
+                    System.out.println("Invalid choice.");
+            }
+        }
+
+    }
 
     }
 

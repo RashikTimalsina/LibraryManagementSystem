@@ -14,8 +14,8 @@ public interface BookQuantityService {
 
     void decreaseQuantity(Book book);
 
-    public void increaseQuantity(Book book);
+    void increaseQuantity(Book book);
 
-    public int getQuantity(Book book);
+    int getQuantity(Book book);
 
 }

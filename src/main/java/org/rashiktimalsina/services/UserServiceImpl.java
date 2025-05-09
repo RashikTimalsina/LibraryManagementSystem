@@ -14,6 +14,7 @@ public class UserServiceImpl implements UserService {
 
     private final List<User> users = new ArrayList<>();
 
+
     @Override
     public void addUser(User user) {
         users.add(user);

@@ -1,7 +1,10 @@
 ### IntelliJ IDEA ###
+.idea/
 out/
 !**/src/main/**/out/
 !**/src/test/**/out/
+data/
+
 
 ### Eclipse ###
 .apt_generated
@@ -27,3 +30,5 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+LibraryManagementSystem.iml

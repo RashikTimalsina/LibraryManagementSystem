@@ -1,11 +1,13 @@
 package main.java.org.rashiktimalsina.entities;
 
+import java.io.Serializable;
+
 /**
  * @author RashikTimalsina
  * @created 28/04/2025
  */
 
-public class User {
+public class User implements Serializable {
     private String id;
     private String name;
     private String email;
