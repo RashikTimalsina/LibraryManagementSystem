@@ -6,6 +6,7 @@ out/
 !**/src/test/**/out/
 data/
 *.iml
+src/main/java/org/rashiktimalsina/db/DatabaseConfig.java
 
 
 ### Eclipse ###
