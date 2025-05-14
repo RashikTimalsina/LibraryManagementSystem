@@ -1,5 +1,10 @@
 package main.java.org.rashiktimalsina;
 
+import main.java.org.rashiktimalsina.db.connection.DatabaseConnection;
+import main.java.org.rashiktimalsina.db.dao.BookDao;
+import main.java.org.rashiktimalsina.db.dao.BookQuantityDao;
+import main.java.org.rashiktimalsina.db.dao.TransactionDao;
+import main.java.org.rashiktimalsina.db.dao.UserDao;
 import main.java.org.rashiktimalsina.entities.Book;
 import main.java.org.rashiktimalsina.entities.LogEntry;
 import main.java.org.rashiktimalsina.entities.User;
@@ -7,8 +12,7 @@ import main.java.org.rashiktimalsina.entities.Transaction;
 import main.java.org.rashiktimalsina.services.*;
 import main.java.org.rashiktimalsina.utils.IdGenerator;
 
-import java.io.File;
-import java.io.IOException;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Scanner;
@@ -19,46 +23,23 @@ import java.util.Scanner;
  */
 
 public class MyMainApp {
-    //keeping the objects static as they will have only one instance for now
-    private static BookQuantityService bookQuantityService = new BookQuantityServiceImpl();
-    private static BookService bookService = new BookServiceImpl(bookQuantityService);
-    private static UserService userService = new UserServiceImpl();
-    private static TransactionService transactionService = new TransactionServiceImpl(bookQuantityService, bookService);
-    private static LoggerService logger = LoggerService.getInstance();
+    // Database-backed services
+    private static BookQuantityDao bookQuantityDao;
+    private static BookDao bookDao;
+    private static UserDao userDao;
+    private static TransactionDao transactionDao;
 
+    //Entity-based services
+    private static BookQuantityService bookQuantityService;
+    private static BookService bookService;
+    private static UserService userService;
+    private static TransactionService transactionService;
 
-    private static final String DATA_DIR = "data";
-    private static final String USERS_FILE = DATA_DIR + "/users.dat";
-    private static final String BOOKS_FILE = DATA_DIR + "/books.dat";
-    private static final String TRANSACTIONS_FILE = DATA_DIR + "/transactions.dat";
-    private static final String LOGS_FILE = DATA_DIR + "/logs.dat";
-
-
-    private static void initializeDataFiles() throws IOException {
-        // Create data directory if it doesn't exist
-        File dataDir = new File(DATA_DIR);
-        if (!dataDir.exists()) {
-            dataDir.mkdir();
-        }
-
-        // Initialize each file
-        createFileIfNotExists(USERS_FILE);
-        createFileIfNotExists(BOOKS_FILE);
-        createFileIfNotExists(TRANSACTIONS_FILE);
-        createFileIfNotExists(LOGS_FILE);
-
-    }
-
-    private static void createFileIfNotExists(String filePath) throws IOException {
-        File file = new File(filePath);
-        if (!file.exists()) {
-            file.createNewFile();
-            System.out.println("Initialized data file: " + filePath);
-        }
-    }
+    //For logging
+    private static LoggerService logger;
 
     //create scanner object to take input
-    private static Scanner sc = new Scanner(System.in);
+     static Scanner sc = new Scanner(System.in);
 
 
     //--------------------------------------------------------------------
@@ -66,8 +47,21 @@ public class MyMainApp {
     //MAIN METHOD
     public static void main(String[] args) {
         try {
-            // Initialize data files first
-            initializeDataFiles();
+            DatabaseConnection.getConnection().close();
+            System.out.println("Database connection established successfully!");
+
+            // Initialize DAOs
+            bookQuantityDao = new BookQuantityDao();
+            bookDao = new BookDao();
+            userDao = new UserDao();
+            transactionDao = new TransactionDao();
+
+            // Initialize services with DAOs
+            bookQuantityService = new BookQuantityServiceImpl(bookQuantityDao);
+            bookService = new BookServiceImpl(bookDao, bookQuantityDao);
+            userService = new UserServiceImpl(userDao);
+            transactionService = new TransactionServiceImpl(transactionDao, bookQuantityDao);
+
 
             // Then initialize logger
             logger = LoggerService.getInstance();
@@ -108,10 +102,13 @@ public class MyMainApp {
                         System.out.println("Invalid choice. Try again.");
                  }
                }
-             } catch(IOException e) {
-                    System.err.println("CRITICAL ERROR: Failed to initialize data files: " + e.getMessage());
-                    System.exit(1);
-             }
+             } catch (SQLException e) {
+            System.err.println("Database connection failed: " + e.getMessage());
+            System.exit(1);
+        } catch (Exception e) {
+            System.err.println("Application error: " + e.getMessage());
+            System.exit(1);
+        }
 }
 
 
@@ -124,7 +121,8 @@ public class MyMainApp {
             System.out.println("3. Search by Title");
             System.out.println("4. Search by Author");
             System.out.println("5. View Available Books");
-            System.out.println("6. Back to Main Menu");
+            System.out.println("6. Delete Book");
+            System.out.println("7. Back to Main Menu");
             System.out.print("Enter choice: ");
 
             int choice = sc.nextInt();
@@ -147,6 +145,9 @@ public class MyMainApp {
                     viewAvailableBooks();
                     break;
                 case 6:
+                    deleteBook();
+                    break;
+                case 7:
                     return;
                 default:
                     System.out.println("Invalid choice.");
@@ -180,6 +181,7 @@ public class MyMainApp {
             logger.logBookOperation("ADD_BOOK",
                     "Failed to add book: " + e.getMessage(),
                     "ERROR");
+            e.printStackTrace();
             System.out.println("Error adding book: " + e.getMessage());
 
         }
@@ -240,7 +242,7 @@ public class MyMainApp {
     private static void viewAvailableBooks() {
         //call the getAvailableBooks method of bookService to view the books in a list
         List<Book> books = bookService.getAvailableBooks();
-        //check if it doesn't has book
+        //check if it doesn't have book
         if (books.isEmpty()) {
             System.out.println("No books available.");
         } else {
@@ -252,6 +254,56 @@ public class MyMainApp {
         }
     }
 
+
+    private static void deleteBook() {
+        try {
+            // First show all books
+            viewAllBooks();
+
+            System.out.print("\nBook ID to delete: ");
+            String bookId = sc.nextLine();
+
+            // Validate input
+            if (bookId.isEmpty()) {
+                System.out.println("Error: Book ID cannot be empty!");
+                return;
+            }
+
+            // now check if book exists
+            Book bookToDelete = bookService.findBookById(bookId);
+            if (bookToDelete == null) {
+                System.out.println("Error: Book with ID " + bookId + " does not exist!");
+                return;
+            }
+
+            // show the book details before asking for confirmation
+            System.out.println("\nBook to be deleted:");
+            System.out.println(bookToDelete);
+
+            //ask for confirmation
+            System.out.print("\nAre you sure you want to delete this book? (yes/no): ");
+            String confirmation = sc.nextLine().toLowerCase();
+
+            if (confirmation.equalsIgnoreCase("yes")) {
+                boolean isDeleted = bookService.deleteBook(bookId);
+                if (isDeleted) {
+                    System.out.println("Book deleted successfully!");
+                    logger.logBookOperation("DELETE_BOOK",
+                            "Deleted book: " + bookId,
+                            "SUCCESS");
+                } else {
+                    System.out.println("Error: Failed to delete book.");
+                }
+            } else {
+                System.out.println("Deletion cancelled.");
+            }
+        }catch(Exception e){
+            System.out.println("Error during user deletion: " + e.getMessage());
+            logger.logBookOperation("DELETE_BOOK",
+                    "Failed to delete book: " + e.getMessage(),
+                    "ERROR");
+        }
+    }
 
 
     // USER OPERATIONS

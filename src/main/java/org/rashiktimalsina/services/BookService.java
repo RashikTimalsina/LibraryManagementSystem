@@ -22,5 +22,8 @@ public interface BookService {
 
     List<Book> getAvailableBooks();
 
+    boolean deleteBook(String id);
+
+
 
 }

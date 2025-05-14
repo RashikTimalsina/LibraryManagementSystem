@@ -10,7 +10,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * @author RashikTimalsina
@@ -23,6 +22,7 @@ public class LogsDataServiceImpl implements LogsDataService {
     private static final String BOOKS_FILE = DATA_DIR + "/books.dat";
     private static final String TRANSACTIONS_FILE = DATA_DIR + "/transactions.dat";
     private static final String LOGS_FILE = DATA_DIR + "/logs.dat";
+    private static final String LOGS_TEXT_FILE_SUFFIX = ".txt";
 
     public LogsDataServiceImpl() {
         //Make a new directory 'data' if it doesn't exist
@@ -62,7 +62,7 @@ public class LogsDataServiceImpl implements LogsDataService {
     }
 
     @Override
-    public void saveLogEntries(List<LogEntry> logEntries) throws IOException {
+    public synchronized void saveLogEntries(List<LogEntry> logEntries) throws IOException {
         saveToFile(logEntries, LOGS_FILE);
 
         //Create a HashMap object logsByType for text file output

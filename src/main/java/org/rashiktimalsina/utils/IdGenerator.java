@@ -1,30 +1,17 @@
 package main.java.org.rashiktimalsina.utils;
 
-/**
- * @author RashikTimalsina
- * @created 29/04/2025
- */
+import java.util.UUID;
 
-/*
-    this class is created to give an auto generated id for all the entities involved for better readability and functioning.
-* */
 public class IdGenerator {
-    private static int bookCounter = 1;
-    private static int userCounter = 1;
-    private static int transactionCounter = 1;
-
-    //to generate id for book
     public static String generateBookId() {
-        return "" + bookCounter++;
+        return "B-" + UUID.randomUUID().toString();
     }
 
-    //to generate id for user
     public static String generateUserId() {
-        return "" + userCounter++;
+        return "U-" + UUID.randomUUID().toString();
     }
 
-    // to generate id for a transaction
     public static String generateTransactionId() {
-        return "" + transactionCounter++;
+        return "T-" + UUID.randomUUID().toString();
     }
 }
