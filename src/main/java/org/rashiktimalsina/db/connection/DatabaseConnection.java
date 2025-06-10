@@ -16,8 +16,13 @@ public class DatabaseConnection {
                     DatabaseConfig.USER,
                     DatabaseConfig.PASSWORD
             );
-        } catch (ClassNotFoundException e) {
-            throw new SQLException("MySQL JDBC Driver not found", e);
+        } catch (ClassNotFoundException ce) {
+            throw new SQLException("MySQL JDBC Driver not found", ce);
+        }
+        catch(SQLException se) {
+            throw new SQLException("Failed to connect to the database", se);
+        } catch (Exception e) {
+            throw new SQLException("An unexpected error occurred while connecting to the database", e);
         }
     }
 

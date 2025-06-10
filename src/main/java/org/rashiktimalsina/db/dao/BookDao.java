@@ -3,10 +3,7 @@ package main.java.org.rashiktimalsina.db.dao;
 import main.java.org.rashiktimalsina.db.connection.DatabaseConnection;
 import main.java.org.rashiktimalsina.entities.Book;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,14 +12,19 @@ import java.util.List;
  * @created 11/05/2025
  */
 public class BookDao {
-    public void addBook(Book book) throws SQLException {
-        String sql = "INSERT INTO books (id, title, author) VALUES (?, ?, ?)";
+    public int addBook(Book book) throws SQLException {
+        String sql = "INSERT INTO books (title, author) VALUES ( ?, ?)";
         try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, book.getId());
-            stmt.setString(2, book.getTitle());
-            stmt.setString(3, book.getAuthor());
+             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            stmt.setString(1, book.getTitle());
+            stmt.setString(2, book.getAuthor());
             stmt.executeUpdate();
+            try (ResultSet rs = stmt.getGeneratedKeys()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+            throw new SQLException("Failed to get generated book ID");
         }
     }
 
@@ -32,9 +34,9 @@ public class BookDao {
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             ResultSet rs = stmt.executeQuery();
-            while(rs.next()) {
+            while (rs.next()) {
                 books.add(new Book(
-                        rs.getString("id"),
+                        rs.getInt("id"),
                         rs.getString("title"),
                         rs.getString("author")
                 ));
@@ -44,15 +46,15 @@ public class BookDao {
 
     }
 
-    public Book findBookById(String id) throws SQLException {
+    public Book findBookById(int id) throws SQLException {
         String sql = "SELECT * FROM books WHERE id = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, id);
+            stmt.setInt(1, id);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     return new Book(
-                            rs.getString("id"),
+                            rs.getInt("id"),
                             rs.getString("title"),
                             rs.getString("author")
                     );
@@ -72,7 +74,7 @@ public class BookDao {
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     books.add(new Book(
-                            rs.getString("id"),
+                            rs.getInt("id"),
                             rs.getString("title"),
                             rs.getString("author")
                     ));
@@ -91,7 +93,7 @@ public class BookDao {
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     books.add(new Book(
-                            rs.getString("id"),
+                            rs.getInt("id"),
                             rs.getString("title"),
                             rs.getString("author")
                     ));
@@ -102,13 +104,30 @@ public class BookDao {
     }
 
 
-    public boolean deleteBook(String id) throws SQLException {
-        String sql = "DELETE FROM books WHERE id = ?";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, id);
-            return stmt.executeUpdate() > 0;
+    public boolean deleteBook(int id) throws SQLException {
+        String deleteQuantitiesSql = "DELETE FROM book_quantities WHERE book_id = ?";
+        String deleteBookSql = "DELETE FROM books WHERE id = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            conn.setAutoCommit(false); // Begin transaction
+            try (
+                    PreparedStatement deleteQuantitiesStmt = conn.prepareStatement(deleteQuantitiesSql);
+                    PreparedStatement deleteBookStmt = conn.prepareStatement(deleteBookSql)
+            ) {
+                deleteQuantitiesStmt.setInt(1, id);
+                deleteQuantitiesStmt.executeUpdate();
+
+                deleteBookStmt.setInt(1, id);
+                int affectedRows = deleteBookStmt.executeUpdate();
+
+                conn.commit(); // Commit transaction
+                return affectedRows > 0;
+            } catch (SQLException e) {
+                conn.rollback(); // Roll back transaction on error
+                throw e;
+            }
         }
+
     }
 
 }

@@ -4,8 +4,6 @@ import main.java.org.rashiktimalsina.db.dao.UserDao;
 import main.java.org.rashiktimalsina.entities.User;
 
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -29,7 +27,9 @@ public class UserServiceImpl implements UserService {
     public void addUser(User user) {
 //        users.add(user);
         try {
-            userDao.addUser(user);
+            int generatedId = userDao.addUser(user);
+            user.setId(generatedId);
+//            userDao.addUser(user);
             logger.logUserOperation("ADD_USER", "Added: " + user.getName(), "SUCCESS");
         } catch (SQLException e) {
             logger.logUserOperation("ADD_USER", "Failed: " + e.getMessage(), "ERROR");
@@ -39,7 +39,7 @@ public class UserServiceImpl implements UserService {
 
 
     @Override
-    public User findUserById(String id) {
+    public User findUserById(int id) {
         //first, traverse through all the users/userlist
 //        for (User user : users) {
 //            //now check if the user id matches with the required user id from the list and return it
@@ -69,7 +69,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public boolean updateUser(String id, String name, String email) {
+    public boolean updateUser(int id, String name, String email) {
 //        // traverse through the users registered in the userlist
 //        for (User user : users) {
 //            //select the user who is to be updated by checking and matching his existing user id
@@ -96,7 +96,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public boolean deleteUser(String id) {
+    public boolean deleteUser(int id) {
 
 //        //Iterator to remove the selected user by his id
 //        Iterator<User> iterator = users.iterator();

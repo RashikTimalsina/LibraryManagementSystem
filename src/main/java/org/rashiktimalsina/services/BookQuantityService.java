@@ -8,9 +8,9 @@ import main.java.org.rashiktimalsina.entities.Book;
  */
 public interface BookQuantityService {
 
-    void addBook(Book book, int quantity);
+    void addBook(int bookId, int quantity);
 
-    boolean isBookAvailable(Book book);
+    boolean isBookAvailable(int bookId);
 
     void decreaseQuantity(Book book);
 

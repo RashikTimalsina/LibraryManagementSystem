@@ -10,7 +10,10 @@ import java.time.LocalDateTime;
 public class LogEntry<T> implements Serializable {
    //create a custom datatypes with enum
     public enum LogType {
-        BOOK, USER, TRANSACTION, SYSTEM
+        BOOK,
+       USER,
+       TRANSACTION,
+       SYSTEM
     }
 
     private LocalDateTime timestamp;

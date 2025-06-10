@@ -8,17 +8,23 @@ import java.io.Serializable;
  */
 
 public class User implements Serializable {
-    private String id;
+    private int id;
     private String name;
     private String email;
 
-    public User(String id, String name, String email) {
+    //id is auto-generated
+    public User(String name, String email) {
+        this.name = name;
+        this.email = email;
+    }
+
+    public User(int id, String name, String email) {
         this.id = id;
         this.name = name;
         this.email = email;
     }
 
-    public String getId() {
+    public int getId() {
         return id;
     }
 
@@ -28,6 +34,10 @@ public class User implements Serializable {
 
     public String getEmail() {
         return email;
+    }
+
+    public void setId(int generatedId) {
+        id=generatedId;
     }
 
     public void setName(String name) {

@@ -12,14 +12,14 @@ public interface TransactionService {
 
     void issueBook(Transaction transaction);
 
-    boolean returnBook(String transactionId);
+    boolean returnBook(int transactionId);
 
     List<Transaction> getAllTransactions();
 
     List<Transaction> getActiveTransactions();
 
-    Transaction findTransactionById(String id);
+    Transaction findTransactionById(int id);
 
-    boolean deleteTransaction(String transactionId);
+    boolean deleteTransaction(int transactionId);
 
 }

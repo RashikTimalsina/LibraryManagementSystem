@@ -2,6 +2,7 @@ package main.java.org.rashiktimalsina.entities;
 
 import java.io.Serializable;
 import java.time.LocalDate;
+import java.util.Objects;
 
 /**
  * @author RashikTimalsina
@@ -9,20 +10,29 @@ import java.time.LocalDate;
  */
 
 public class Transaction implements Serializable {
-    private String id;
+    private int id;
     private Book book;
     private User user;
     private LocalDate issueDate;
     private LocalDate returnDate;
 
-    public Transaction(String id, Book book, User user, LocalDate issueDate) {
+    //id is auto-incremented
+    public Transaction(Book book, User user, LocalDate issueDate, LocalDate returnDate) {
+        this.book = Objects.requireNonNull(book);
+        this.user = Objects.requireNonNull(user);
+        this.issueDate = Objects.requireNonNull(issueDate);
+        this.returnDate = returnDate;
+    }
+
+    public Transaction(int id, Book book, User user, LocalDate issueDate, LocalDate returnDate) {
         this.id = id;
         this.book = book;
         this.user = user;
         this.issueDate = issueDate;
+        this.returnDate = returnDate;
     }
 
-    public String getId() {
+    public int getId() {
         return id;
     }
 
@@ -42,8 +52,8 @@ public class Transaction implements Serializable {
         return returnDate;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public void setId(int generatedId) {
+        id = generatedId;
     }
 
     public void setBook(Book book) {

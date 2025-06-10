@@ -25,10 +25,10 @@ public class BookQuantityServiceImpl implements BookQuantityService {
     }
 
     @Override
-    public void addBook(Book book, int quantity) {
+    public void addBook(int bookId, int quantity) {
 //        bookQuantity.put(book, quantity);
         try {
-            bookQuantityDao.addBook(book, quantity);
+            bookQuantityDao.addBook(bookId, quantity);
         } catch (SQLException e) {
             throw new RuntimeException("Database error", e);
         }
@@ -36,10 +36,10 @@ public class BookQuantityServiceImpl implements BookQuantityService {
 
 
     @Override
-    public boolean isBookAvailable(Book book) {
+    public boolean isBookAvailable(int bookId) {
 //        return bookQuantity.getOrDefault(book, 0) > 0;
         try {
-            return bookQuantityDao.isBookAvailable(book);
+            return bookQuantityDao.isBookAvailable(bookId);
         } catch (Exception e) {
             throw new RuntimeException("Database error", e);
         }

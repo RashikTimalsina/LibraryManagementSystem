@@ -19,8 +19,6 @@ public class TransactionServiceImpl implements TransactionService {
     private final BookQuantityDao bookQuantityDao;
     private final LoggerService logger;
 
-
-
     public TransactionServiceImpl(TransactionDao transactionDao, BookQuantityDao bookQuantityDao) {
         this.transactionDao = transactionDao;
         this.bookQuantityDao = bookQuantityDao;
@@ -37,7 +35,9 @@ public class TransactionServiceImpl implements TransactionService {
 //        }
         try {
             if (bookQuantityDao.getQuantity(transaction.getBook()) > 0) {
-                transactionDao.issueBook(transaction);
+                int generatedId = transactionDao.issueBook(transaction); // Get the generated ID
+                transaction.setId(generatedId);
+//                transactionDao.issueBook(transaction);
                 bookQuantityDao.decreaseQuantity(transaction.getBook());
                 logger.logTransactionOperation("ISSUE_BOOK",
                         "Issued: " + transaction.getBook().getTitle(), "SUCCESS");
@@ -54,7 +54,7 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public boolean returnBook(String transactionId) {
+    public boolean returnBook(int transactionId) {
 //        Transaction transaction = findTransactionById(transactionId);
 //        if (transaction != null && transaction.getReturnDate() == null) {
 //            transaction.setReturnDate(LocalDate.now());
@@ -111,7 +111,7 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public Transaction findTransactionById(String id) {
+    public Transaction findTransactionById(int id) {
 //        for (Transaction transaction : transactions) {
 //            if (transaction.getId().equals(id)) {
 //                return transaction;
@@ -128,7 +128,7 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public boolean deleteTransaction(String transactionId) {
+    public boolean deleteTransaction(int transactionId) {
 //        for (int i = 0; i < transactions.size(); i++) {
 //            if (transactions.get(i).getId().equals(transactionId)) {
 //                if (transactions.get(i).getReturnDate() == null) {

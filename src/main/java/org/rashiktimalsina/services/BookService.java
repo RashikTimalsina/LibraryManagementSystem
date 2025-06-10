@@ -14,7 +14,7 @@ public interface BookService {
 
     List<Book> getAllBooks();
 
-    Book findBookById(String id);
+    Book findBookById(int id);
 
     List<Book> findBooksByTitle(String title);
 
@@ -22,7 +22,7 @@ public interface BookService {
 
     List<Book> getAvailableBooks();
 
-    boolean deleteBook(String id);
+    boolean deleteBook(int id);
 
 
 

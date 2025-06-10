@@ -32,8 +32,9 @@ public class BookServiceImpl implements BookService {
     public void addBook(Book book) {
 //        books.add(book);
         try {
-            bookDao.addBook(book);
-//            bookQuantityDao.addBook(book, 1);
+            int generatedId = bookDao.addBook(book);
+            book.setId(generatedId);
+//            bookDao.addBook(book);
             logger.logBookOperation("ADD_BOOK", "Added: " + book.getTitle(), "SUCCESS");
         } catch (SQLException e) {
             logger.logBookOperation("ADD_BOOK", "Failed: " + e.getMessage(), "ERROR");
@@ -42,7 +43,7 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
-    public Book findBookById(String id) {
+    public Book findBookById(int id) {
 //        for (Book book : books) {
 //            if (book.getId().equals(id)) {
 //                return book;
@@ -137,7 +138,7 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
-    public boolean deleteBook(String id) {
+    public boolean deleteBook(int id) {
 
 //        //Iterator to remove the selected book by its id
 //        Iterator<Book> iterator = books.iterator();
@@ -153,16 +154,28 @@ public class BookServiceImpl implements BookService {
 //        return false;
 //    }
         try {
+            Book book = bookDao.findBookById(id);
+            if (book == null) {
+                logger.logBookOperation("DELETE_BOOK", "Book not found: " + id, "ERROR");
+                System.err.println("Book with ID " + id + " not found.");
+                return false;
+            }
+
             boolean deleted = bookDao.deleteBook(id);
             if (deleted) {
-                logger.logUserOperation("DELETE_BOOK", "Deleted: " + id, "SUCCESS");
+                logger.logBookOperation("DELETE_BOOK", "Deleted: " + id, "SUCCESS");
+                System.out.println("Book with ID " + id + " deleted successfully.");
+                return true;
             } else {
-                logger.logUserOperation("DELETE_BOOK", "Failed to delete: " + id, "ERROR");
+                logger.logBookOperation("DELETE_BOOK", "Delete operation failed: " + id, "ERROR");
+                return false;
             }
-            return deleted;
         } catch (SQLException e) {
-            logger.logUserOperation("DELETE_BOOK", "Failed: " + e.getMessage(), "ERROR");
-            throw new RuntimeException("Database error", e);
+            logger.logBookOperation("DELETE_BOOK", "Failed: " + e.getMessage(), "ERROR");
+            throw new RuntimeException("Database error during book deletion for ID " + id + ": " + e.getMessage(), e);
+        } catch (Exception e) {
+            logger.logBookOperation("DELETE_BOOK", "Unexpected error: " + e.getMessage(), "ERROR");
+            throw new RuntimeException("Unexpected error during book deletion.", e);
         }
     }
 }

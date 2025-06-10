@@ -17,24 +17,31 @@ import java.util.*;
  * @created 11/05/2025
  */
 public class TransactionDao {
-    public void issueBook(Transaction transaction) throws SQLException {
-        String sql = "INSERT INTO transactions (id, book_id, user_id, issue_date) VALUES (?, ?, ?, ?)";
+    public int issueBook(Transaction transaction) throws SQLException {
+        String sql = "INSERT INTO transactions (book_id, user_id, issue_date) VALUES (?, ?, ?)";
         try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, transaction.getId());
-            stmt.setString(2, transaction.getBook().getId());
-            stmt.setString(3, transaction.getUser().getId());
-            stmt.setDate(4, Date.valueOf(transaction.getIssueDate()));
+             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)){
+            stmt.setInt(1, transaction.getBook().getId());
+            stmt.setInt(2, transaction.getUser().getId());
+            stmt.setDate(3, Date.valueOf(transaction.getIssueDate()));
             stmt.executeUpdate();
+
+
+            try (ResultSet rs = stmt.getGeneratedKeys()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+            throw new SQLException("Failed to get generated transaction ID");
         }
     }
 
-    public boolean returnBook(String transactionId, LocalDate returnDate) throws SQLException {
+    public boolean returnBook(int transactionId, LocalDate returnDate) throws SQLException {
         String sql = "UPDATE transactions SET return_date = ? WHERE id = ? AND return_date IS NULL";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setDate(1, Date.valueOf(returnDate));
-            stmt.setString(2, transactionId);
+            stmt.setInt(2, transactionId);
             return stmt.executeUpdate() > 0;
         }
     }
@@ -47,17 +54,17 @@ public class TransactionDao {
                 "JOIN users u ON t.user_id = u.id";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery(sql)) {
+             ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
+                LocalDate returnDate = rs.getDate("return_date") != null ?
+                        rs.getDate("return_date").toLocalDate() : null;
                 Transaction transaction = new Transaction(
-                        rs.getString("id"),
-                        new Book(rs.getString("book_id"), rs.getString("book_title"), ""),
-                        new User(rs.getString("user_id"), rs.getString("user_name"), ""),
-                        rs.getDate("issue_date").toLocalDate()
+                        rs.getInt("id"),
+                        new Book(rs.getInt("book_id"), rs.getString("book_title"), ""),
+                        new User(rs.getInt("user_id"), rs.getString("user_name"), ""),
+                        rs.getDate("issue_date").toLocalDate(),
+                        returnDate
                 );
-                if (rs.getDate("return_date") != null) {
-                    transaction.setReturnDate(rs.getDate("return_date").toLocalDate());
-                }
                 transactions.add(transaction);
             }
         }
@@ -73,20 +80,23 @@ public class TransactionDao {
                 "WHERE t.return_date IS NULL";
         try (Connection conn = DatabaseConnection.getConnection();
             PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery(sql)) {
+             ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
+                LocalDate returnDate = rs.getDate("return_date") != null ?
+                        rs.getDate("return_date").toLocalDate() : null;
                 transactions.add(new Transaction(
-                        rs.getString("id"),
-                        new Book(rs.getString("book_id"), rs.getString("book_title"), ""),
-                        new User(rs.getString("user_id"), rs.getString("user_name"), ""),
-                        rs.getDate("issue_date").toLocalDate()
+                        rs.getInt("id"),
+                        new Book(rs.getInt("book_id"), rs.getString("book_title"), ""),
+                        new User(rs.getInt("user_id"), rs.getString("user_name"), ""),
+                        rs.getDate("issue_date").toLocalDate(),
+                        returnDate
                 ));
             }
         }
         return transactions;
     }
 
-    public Transaction findTransactionById(String id) throws SQLException {
+    public Transaction findTransactionById(int id) throws SQLException {
         String sql = "SELECT t.*, b.title as book_title, u.name as user_name " +
                 "FROM transactions t " +
                 "JOIN books b ON t.book_id = b.id " +
@@ -94,18 +104,19 @@ public class TransactionDao {
                 "WHERE t.id = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, id);
+            stmt.setInt(1, id);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
+                    LocalDate returnDate = rs.getDate("return_date") != null ?
+                            rs.getDate("return_date").toLocalDate() : null;
                     Transaction transaction = new Transaction(
-                            rs.getString("id"),
-                            new Book(rs.getString("book_id"), rs.getString("book_title"), ""),
-                            new User(rs.getString("user_id"), rs.getString("user_name"), ""),
-                            rs.getDate("issue_date").toLocalDate()
+                            rs.getInt("id"),
+                            new Book(rs.getInt("book_id"), rs.getString("book_title"), ""),
+                            new User(rs.getInt("user_id"), rs.getString("user_name"), ""),
+                            rs.getDate("issue_date").toLocalDate(),
+                            returnDate
                     );
-                    if (rs.getDate("return_date") != null) {
-                        transaction.setReturnDate(rs.getDate("return_date").toLocalDate());
-                    }
+
                     return transaction;
                 }
             }
@@ -113,11 +124,11 @@ public class TransactionDao {
         return null;
     }
 
-    public boolean deleteTransaction(String transactionId) throws SQLException {
+    public boolean deleteTransaction(int transactionId) throws SQLException {
         String sql = "DELETE FROM transactions WHERE id = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, transactionId);
+            stmt.setInt(1, transactionId);
             return stmt.executeUpdate() > 0;
         }
     }
